@@ -1,18 +1,42 @@
-version: "3"
+version: "3.9"
 services:
-  postgres:
-    image: library/postgres:13
-    container_name: postgres
-    restart: on-failure
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: postgres
-    volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./postgres/:/docker-entrypoint-initdb.d/
+  pg:
+    image: postgres:14-alpine
+    container_name: pg
+    expose:
+      - 5432
     ports:
       - "5432:5432"
-
+    environment:
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${DB}
+      PGDATA: "/data/lib/postgresql/data/pgdata"
+    volumes:
+      - pg_data_volume:/data/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: pg_isready --dbname=$DB --username=$USER
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rsoi1
+    container_name: crud-app
+    restart: unless-stopped
+    depends_on:
+      pg:
+        condition: service_healthy
+    ports:
+      - "8080:1234"
+    environment:
+      HOST: ${HOST}
+      PORT: ${PORT}
+      DB: ${DB}
+      USER: ${USER}
+      PASSWORD: ${PASSWORD}
 volumes:
-  db-data:
+  pg_data_volume:
