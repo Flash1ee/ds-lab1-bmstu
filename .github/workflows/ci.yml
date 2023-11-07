@@ -1,0 +1,46 @@
+name: Go
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+env:
+  GO_VERSION: '1.20'
+  SERVER_USERNAME: 'ubuntu'
+  APP_VERSION: ${{ github.run_number }}
+
+jobs:
+  build:
+    name: "Building"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Building
+        run: go build -mod=vendor -v ./cmd/server/main.go
+
+  test:
+    name: "Testing"
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Test
+        run: go test ./...
